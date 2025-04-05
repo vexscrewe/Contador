@@ -1,5 +1,5 @@
 import {useRouter} from "expo-router";
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import { Button,
         Text, 
         View, 
@@ -9,132 +9,135 @@ import { Button,
         TouchableOpacity,
         ScrollView } from "react-native";
 
+// Componente principal da aplicação
 export default function Index() {
 
   const [contador, setContador] = useState(0);
   const [contadores, setContadores] = useState<Number[]>([])
   const [oddEven, setOddEven] = useState<string>('Par');
   const [modificador, setModificador] = useState(1);
+  const [autoContar, setAutoContar] = useState<boolean>(false);
 
-
-  function handleNumberAdd(){
-    setContador(contador+modificador)
-    handleAddContador()
-  }
-
-  function handleNumberSub(){
-    setContador(contador-modificador)
-    handleAddContador()
-  }
-
+  // Adiciona um número ao array do histórico
   function handleAddContador(){
     if(contador !== null){
       setContadores(oldState => [...oldState, contador])
     }
   }
+  // Incrementa um valor ao contador
+  function handleNumberAdd(){
+    setContador(contador+modificador)
+    handleAddContador()
+  }
+  // Decrementa um valor ao contador
+  function handleNumberSub(){
+    setContador(contador-modificador)
+    handleAddContador()
+  }
 
+  // Limpa todos os estados e o array do histórico
   function handleClear(){
     setContador(0)
     setContadores([])
     setModificador(1)
+    setAutoContar(false); // Altera o botão de auto contagem
   }
 
-  // function handleOdd(){
-  //   if(contador%2==0){
-  //     setOddEven('Par')
-  //   }
-  //   else{
-  //     setOddEven('Impar')
-  //   }
-  // }
+  // Altera o valor booleano do auto contar
+  function toggleAutoContar(){
+    setAutoContar((prev) => (!prev));
+  }
+
+  // Define qual a cor do texto do contador
+  function getColor(){
+    if(contador > 0) return 'green';
+    if(contador < 0) return 'red';
+  }
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>
+
+    if(autoContar){
+      intervalId = setInterval(() => {
+        handleNumberAdd()
+      }, 1000)
+    }
+
+    return() => {
+      if(intervalId){
+        clearInterval(intervalId)
+      }
+    }
+  }, [autoContar, contador, modificador])
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}> Contador Inteligente</Text>
 
-      <Text style={styles.counter}>
-      {contador}
-      </Text>
+      <Text style={[styles.counter, {color: getColor()}]}>{contador}</Text>
 
-      <Text style={styles.parImpar}>
-        O número é {contador%2==0 ? 'Par' : 'Impar'}
-      </Text>
+      <Text style={styles.parImpar}>O número é {contador%2==0 ? 'Par' : 'Impar'}</Text>
 
       <View style={styles.botoes}>
+        <TouchableOpacity 
+          style={styles.button} 
+          activeOpacity={.5} 
+          onPress={handleNumberSub}>
 
-      <TouchableOpacity 
-        style={styles.button} 
-        activeOpacity={.5} 
-        onPress={handleNumberSub}>
+          <Text style= {styles.buttonText}>DIMINUIR</Text>
+        </TouchableOpacity>
 
-        
-        <Text style= {styles.buttonText}>DIMINUIR</Text>
-        
-
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.button} 
-        activeOpacity={.5}
-        onPress={handleNumberAdd}>
-        
-        <Text style= {styles.buttonText}>AUMENTAR</Text>
-
-      </TouchableOpacity>
-
+        <TouchableOpacity 
+          style={styles.button} 
+          activeOpacity={.5}
+          onPress={handleNumberAdd}>
+          
+          <Text style= {styles.buttonText}>AUMENTAR</Text>
+        </TouchableOpacity>
       </View>
 
       <TextInput
-      style={styles.input}
-      placeholder='1'
-      value={String(modificador)}
-      onChangeText={(item)=> setModificador(parseInt(item) || 0)}
+        style={styles.input}
+        keyboardType='numeric'
+        placeholder='1'
+        value={String(modificador)}
+        onChangeText={(item)=> setModificador(parseInt(item) || 0)}
       />
-        
-        <View style={styles.botoes}>
+      
+      <View style={styles.botoes}>
 
-<TouchableOpacity 
-  style={styles.button} 
-  activeOpacity={.5}
-  onPress={handleClear}
-  >
+        <TouchableOpacity 
+          style={styles.button} 
+          activeOpacity={.5}
+          onPress={handleClear}>
 
-  
-  <Text style= {styles.buttonText}>ZERAR</Text>
-  
+          <Text style= {styles.buttonText}>ZERAR</Text>
+        </TouchableOpacity>
 
-</TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.button} 
+          activeOpacity={.5}
+          >
+          <Text style= {styles.buttonText}  
+            onPress={toggleAutoContar}>
+            {autoContar ? 'PARAR AUTO' : 'INICIAR AUTO'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-<TouchableOpacity 
-  style={styles.button} 
-  activeOpacity={.5}>
-  
-  <Text style= {styles.buttonText}>INICIAR AUTO</Text>
-
-</TouchableOpacity>
-
-</View>
-
-<Text style = {styles.history}>
-
-  Histórico:
-
-</Text>
-
-<ScrollView
-keyboardShouldPersistTaps= 'handled'>
-
-  {
-    contadores.slice(-10).reverse().map((item, index) =>(
-      <Text key={index} style={styles.contadoresItem}>
-        {String(item)}
+      <Text style = {styles.history}>
+        Histórico:
       </Text>
-    ))
-  }
 
-</ScrollView>
-
-
+      <ScrollView keyboardShouldPersistTaps= 'handled'>
+        {
+          contadores.slice(-10).reverse().map((item, index) =>(
+            <Text key={index} style={styles.contadoresItem}>
+              {String(item)}
+            </Text>
+          ))
+        }
+      </ScrollView>
     </View>
   );
 }
@@ -208,5 +211,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center'
   }
-
 })
